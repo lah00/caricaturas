@@ -1,4 +1,22 @@
+# Credenciales y archivos de entorno
 .env
+*.env
+
+# Archivos temporales de imágenes generadas localmente
+caricatura_bruta.jpg
+caricatura_final.jpg
 *.jpg
+*.png
+
+# Caché de Python y compilaciones
 __pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+
+# Sistema operativo y editores
 .DS_Store
+Thumbs.db
+.vscode/
+.idea/
