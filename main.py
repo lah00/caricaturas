@@ -17,17 +17,17 @@ TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 # Ruta exacta del logo en tu repositorio
 LOGO_PATH = "logo la hiena.jpeg"
 
-# Clientes configurados para Groq y OpenRouter (con timeout de 500 segundos)
+# Clientes configurados para Groq y OpenRouter (con timeout de 1000 segundos)
 groq_client = OpenAI(
     base_url="https://api.groq.com/openai/v1",
     api_key=GROQ_API_KEY,
-    timeout=500.0
+    timeout=1000.0
 )
 
 openrouter_client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
     api_key=OPENROUTER_API_KEY,
-    timeout=500.0
+    timeout=1000.0
 )
 
 # --- 2. GROQ (IA 1): ANÁLISIS DE COYUNTURA GLOBAL Y LATINOAMERICANA ---
@@ -38,7 +38,7 @@ def analizar_coyuntura_groq():
     Genera un análisis materialista, crudo y directo de la situación actual que sirve de base para una caricatura de agitación."""
     
     response = groq_client.chat.completions.create(
-        model="llama-3.1-70b-versatile",  # Modelo estable y verificado en Groq
+        model="llama-3.3-70b-versatile",  # Modelo activo y recomendado en Groq
         messages=[
             {"role": "system", "content": prompt_sistema},
             {"role": "user", "content": "Analiza los hechos más urgentes de la semana sobre la opresión burguesa y la resistencia popular."}
