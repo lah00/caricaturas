@@ -7,50 +7,71 @@ from google import genai
 from PIL import Image
 from telegram import Bot
 
-# --- 1. CONFIGURACIÓN DE CREDENCIALES (Variables de Entorno / GitHub Secrets) ---
+# --- 1. CONFIGURACIÓN DE CREDENCIALES (GitHub Secrets) ---
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
-# Ruta exacta del logo seleccionado en tu repositorio
+# Ruta exacta del logo en tu repositorio
 LOGO_PATH = "logo la hiena.jpeg"
 
-# Cliente unificado para Groq (compatible con formato OpenAI)
-ai_client = OpenAI(
+# Clientes configurados para Groq y OpenRouter (con timeout de 500 segundos)
+groq_client = OpenAI(
     base_url="https://api.groq.com/openai/v1",
-    api_key=GROQ_API_KEY
+    api_key=GROQ_API_KEY,
+    timeout=500.0
 )
 
-# --- 2. IA 1 & IA 2: ANÁLISIS DE COYUNTURA Y GUION SATÍRICO ---
-def analizar_y_crear_concepto():
-    prompt_sistema = """Eres el analista político internacional y director de arte de un medio de izquierda revolucionaria (marxista-leninista, guevarista y camilista). 
-    Tu línea crítica rechaza por igual a la derecha fascista y a la socialdemocracia reformista funcional al capital.
-    Analiza la coyuntura actual de la lucha de clases en Colombia y el mundo. Selecciona un hecho clave reciente (tarifazos, entrega de soberanía, represión o farsa burguesa).
-    Devuelve estrictamente un objeto JSON con tres llaves:
-    - "contexto_analitico": Breve explicación de los hechos desde el materialismo histórico.
-    - "prompt_imagen": Descripción detallada en INGLÉS para la IA generativa de imágenes. Especifica: caricatura política satírica en blanco y negro, trazo de tinta gruesa, estilo viñeta de prensa opositora. Exagera rasgos físicos según el personaje (políticos con frentes anchas de hipocresía, burócratas con grandes orejas sordas al pueblo, banqueros o militares con grandes narices). Incluye pancartas o carteles con texto visible en español.
-    - "pie_pagina": Un único párrafo combativo, sin viñetas, de agitación popular que acompañará la caricatura en Telegram, alineado con tus ideales revolucionarios."""
+openrouter_client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=OPENROUTER_API_KEY,
+    timeout=500.0
+)
 
-    response = ai_client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+# --- 2. GROQ (IA 1): ANÁLISIS DE COYUNTURA GLOBAL Y LATINOAMERICANA ---
+def analizar_coyuntura_groq():
+    prompt_sistema = """Eres el analista político internacional de un medio de comunicación popular con línea marxista-leninista, maoísta, antiimperialista, camilista y guevarista. 
+    Tu crítica rechaza frontalmente tanto a la derecha oligárquica como al reformismo progresista funcional al capital.
+    Analiza la coyuntura actual de la lucha de clases, tarifas, opresión estatal o entregas de soberanía en Colombia, América Latina y el mundo.
+    Genera un análisis materialista, crudo y directo de la situación actual que sirve de base para una caricatura de agitación."""
+    
+    response = groq_client.chat.completions.create(
+        model="llama-3.1-70b-versatile",  # Modelo estable y verificado en Groq
         messages=[
             {"role": "system", "content": prompt_sistema},
-            {"role": "user", "content": "Genera la viñeta de agitación para la publicación de hoy."}
+            {"role": "user", "content": "Analiza los hechos más urgentes de la semana sobre la opresión burguesa y la resistencia popular."}
+        ]
+    )
+    return response.choices[0].message.content
+
+# --- 3. OPENROUTER (IA 2): DIRECTOR DE ARTE Y REDACTOR DEL MANIFIESTO ---
+def generar_guion_y_pie_openrouter(analisis_previo):
+    prompt_sistema = """Eres el director de arte y jefe de redacción de 'Prensa Rebelde'. 
+    Basándote en el análisis político provisto, debes generar un objeto JSON estricto con exactamente dos llaves:
+    1. "prompt_imagen": Descripción detallada en INGLÉS para una IA generativa de imágenes. Especifica: caricatura política satírica en blanco y negro, trazo de tinta gruesa, estilo viñeta de prensa opositora. Exagera de manera grotesca y precisa los rasgos físicos según el rol: políticos burgueses con frentes gigantescas de hipocresía (frentones), burócratas o tecnócratas con orejas descomunales sordas al clamor popular (orejones), y banqueros o militares con narices inmensas (narizones). Incluye carteles o pancartas con textos de protesta visibles en español.
+    2. "pie_pagina": Un único párrafo combativo, sin viñetas, de agitación popular que acompañará la caricatura en Telegram, alineado rígidamente con el marxismo-leninismo, el maoísmo, el pensamiento de Ho Chi Minh, el camilismo y el guevarismo."""
+
+    response = openrouter_client.chat.completions.create(
+        model="deepseek/deepseek-chat",
+        messages=[
+            {"role": "system", "content": prompt_sistema},
+            {"role": "user", "content": f"A partir de este análisis de coyuntura, genera la viñeta satírica y el pie de página revolucionario:\n\n{analisis_previo}"}
         ],
         response_format={ "type": "json_object" }
     )
     return json.loads(response.choices[0].message.content)
 
-# --- 3. IA 3: GENERACIÓN GRÁFICA CON GEMINI (IMAGEN 3) ---
+# --- 4. GEMINI (IA 3): RENDERIZADO GRÁFICO DE LA CARICATURA ---
 def generar_caricatura_gemini(prompt_visual):
     client = genai.Client(api_key=GEMINI_API_KEY)
     
     estilo_estricto = (
         "Political satirical cartoon in harsh black and white ink drawing style, heavy black outlines, "
-        "vintage newspaper halftone dot shading. Satirical caricature with exaggerated facial features "
-        "(prominent big foreheads for corrupt politicians, oversized ears for deaf bureaucrats, huge noses). "
-        "Sharp class struggle critique aesthetic, clean vector line art. "
+        "vintage newspaper halftone dot shading. Satirical caricature with heavily exaggerated facial features: "
+        "massive giant foreheads for corrupt politicians (frentones), grotesquely oversized ears for deaf bureaucrats (orejones), "
+        "huge dominant noses (narizones). Sharp class struggle critique aesthetic, clean vector line art. "
         f"Scene details: {prompt_visual}"
     )
 
@@ -71,25 +92,22 @@ def generar_caricatura_gemini(prompt_visual):
         
     return output_filename
 
-# --- 4. PROCESAMIENTO LOCAL: ESTAMPADO DEL LOGO ---
+# --- 5. PROCESAMIENTO LOCAL: ESTAMPADO DEL LOGO ---
 def estampar_logo_hiena(imagen_path, logo_path, salida="caricatura_final.jpg"):
     base = Image.open(imagen_path).convert("RGBA")
     logo = Image.open(logo_path).convert("RGBA")
 
-    # Redimensionar el logo proporcionalmente (20% del ancho de la viñeta)
     basewidth = int(base.size[0] * 0.20)
     wpercent = (basewidth / float(logo.size[0]))
     hsize = int(float(logo.size[1]) * float(wpercent))
     logo = logo.resize((basewidth, hsize), Image.Resampling.LANCZOS)
 
-    # Posicionar el logo en la esquina superior derecha con un margen de 25 píxeles
     posicion = (base.size[0] - basewidth - 25, 25)
-    
     base.paste(logo, posicion)
     base.convert("RGB").save(salida, "JPEG")
     return salida
 
-# --- 5. DIFUSIÓN AUTOMÁTICA EN TELEGRAM ---
+# --- 6. DIFUSIÓN EN TELEGRAM ---
 async def publicar_telegram(imagen_final, texto_pie):
     bot = Bot(token=TELEGRAM_BOT_TOKEN)
     mensaje_completo = f"🏴 <b>LA HIENA | Prensa Rebelde</b>\n\n{texto_pie}"
@@ -105,18 +123,20 @@ async def publicar_telegram(imagen_final, texto_pie):
 
 # --- ORQUESTADOR PRINCIPAL ---
 async def main():
-    print("🤖 [IA 1 & 2] Analizando coyuntura y diseñando concepto revolucionario...")
-    datos = analizar_y_crear_concepto()
-    print(f"-> Contexto seleccionado: {datos['contexto_analitico'][:100]}...")
-
-    print("🎨 [IA 3] Renderizando caricatura en blanco y negro con Gemini...")
-    img_bruta = generar_caricatura_gemini(datos["prompt_imagen"])
+    print("🌍 [Groq] Analizando coyuntura global, regional y nacional...")
+    analisis = analizar_coyuntura_groq()
     
-    print("🛠️ Procesando imagen y aplicando el sello de La Hiena...")
+    print("🎨 [OpenRouter] Procesando sátira visual (frentones, orejones, narizones) y manifiesto...")
+    datos_creativos = generar_guion_y_pie_openrouter(analisis)
+
+    print("🖌️ [Google Gemini] Renderizando caricatura en blanco y negro...")
+    img_bruta = generar_caricatura_gemini(datos_creativos["prompt_imagen"])
+    
+    print("🛠️ Aplicando el sello oficial de La Hiena...")
     img_final = estampar_logo_hiena(img_bruta, LOGO_PATH)
     
-    print("📢 [IA 4] Enviando comunicación gráfica a Telegram...")
-    await publicar_telegram(img_final, datos["pie_pagina"])
+    print("📢 [Telegram] Publicando contenido en el canal...")
+    await publicar_telegram(img_final, datos_creativos["pie_pagina"])
 
 if __name__ == "__main__":
     asyncio.run(main())
