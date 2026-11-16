@@ -38,7 +38,7 @@ def analizar_coyuntura_groq():
     Genera un análisis materialista, crudo y directo de la situación actual que sirve de base para una caricatura de agitación."""
     
     response = groq_client.chat.completions.create(
-        model="llama-3.3-70b-versatile",  # Modelo activo y recomendado en Groq
+        model="llama-3.1-8b-instant",  # Modelo 100% estable y disponible en Groq
         messages=[
             {"role": "system", "content": prompt_sistema},
             {"role": "user", "content": "Analiza los hechos más urgentes de la semana sobre la opresión burguesa y la resistencia popular."}
