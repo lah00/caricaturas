@@ -1,5 +1,5 @@
-requests
-pillow
-google-genai
-python-telegram-bot
 openai
+google-genai
+pillow
+python-telegram-bot
+requests
